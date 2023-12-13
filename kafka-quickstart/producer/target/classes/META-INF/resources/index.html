@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Event-Driven Tesla</title>
+
+    <link rel="stylesheet" type="text/css"
+          href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly.min.css">
+    <link rel="stylesheet" type="text/css"
+          href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly-additions.min.css">
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title">Voitures Tesla</h2>
+            <br>
+            <button class="btn btn-info" id="request-quote1">Acheter Model M</button>
+            <button class="btn btn-info" id="request-quote2">Acheter Model I</button>
+            <button class="btn btn-info" id="request-quote3">Acheter Model A</button>
+            <button class="btn btn-info" id="request-quote4">Acheter Model G</button>
+            <button class="btn btn-info" id="request-quote5">Acheter Model E</button>
+            <br>
+            <div class="quotes"></div>
+        </div>
+    </div>
+</div>
+</body>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+
+    var car_count=0;
+    function updateStatusM(newStatus) {
+        document.getElementById('Tesla - model M').innerText = newStatus;
+    }
+
+
+    function updateStatusI(newStatus) {
+        document.getElementById('Tesla - model I').innerText = newStatus;
+    }
+
+    $("#request-quote1").click((event) => {
+        setTimeout(function() {
+            // Nouvel état après le délai
+            car_count++;
+            updateStatusM('Prêt');
+            delivred(car_count);
+        }, 10000);
+        fetch("/quotes/request/modelM", {method: "POST"})
+        .then(res => res.text())
+        .then(qid => {
+            var row = $(`<h4 class='col-md-12'>Vehicule vendu # <i>${qid}</i> | <strong id='${qid}'>En attente</strong></h4>`);
+            $(".quotes").prepend(row);
+        });
+    });
+    $("#request-quote2").click((event) => {
+        setTimeout(function() {
+            // Nouvel état après le délai
+            car_count++;
+            updateStatusI('Prêt');
+            delivred(car_count);
+        }, 2000);
+        fetch("/quotes/request/modelI", {method: "POST"})
+            .then(res => res.text())
+            .then(qid => {
+                var row = $(`<h4 class='col-md-12' >Vehicule vendu # <i>${qid}</i> | <strong id='${qid}'>En attente</strong></h4>`);
+                $(".quotes").prepend(row);
+            });
+    });
+
+    function delivred(car_count) {
+        if (car_count %10 ==0){
+            fetch("quotes/request/delivered", {method: "POST"})
+                .then(res => res.text())
+                .then(qid => {
+                    var row = $(`<h4 class='col-md-12' ><i>${qid}</i></h4>`);
+                    $(".quotes").prepend(row);
+
+                });
+            fetch("quotes/request/sold", {method: "POST"})
+                .then(res => res.text())
+                .then(qid => {
+                    var row = $(`<h4 class='col-md-12' ><i>${qid}</i></h4>`);
+                    $(".quotes").prepend(row);
+                });
+        }
+
+    }
+
+
+
+    var source = new EventSource("/quotes");
+    source.onmessage = (event) => {
+      var json = JSON.parse(event.data);
+      $(`#${json.id}`).html((index, html) => {
+        return html.replace("En attente", `\$\xA0${json.price}`);
+      });
+    };
+</script>
+</html>
